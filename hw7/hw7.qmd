@@ -1,7 +1,7 @@
 ---
 title: Homework 7 - Creating a resume database
-author: (your name goes here!)
-date: last-modified
+author: Charles Hesse 
+date: 12-6-2023
 format:
     html:
         theme: cosmo
@@ -10,11 +10,10 @@ format:
         code-copy: true
 ---
 
-(include a brief description of what is in this document)
+This is my (very late) submission for HW7. I've created a database using a DDL. This work was done in an accompanying SQL file.
 
-(Please clean up any comments that I included.  This is a scaffold document.)
 
-GITHUB URL:  <your URL goes here!>
+GITHUB URL:  <https://github.com/cmsc-vcu/cmsc508-fa2023-hw7-CharlesJH5>
 
 ```{python}
 #| eval: true
@@ -92,24 +91,54 @@ except Exception as e:
 
 ## Overview and description
 
-(briefly describe the project and the database)
+This database is comprised of employees in a company, and provides a way to search their skills and the time they've spent in the company.
+People can have multiple skills, and multiple roles. These exist in seperate tables.
 
 ## Crows-foot diagram
 
-(add a description of the diagram and what the reader is seeing.)
+This diagram shows the relationship between the tables. People can be described by their skills and roles. Peopleskills and peopleroles are an intermediary entity that uses a base table to roles and skills that list what types of roles and skills exist.
 
 ```{mermaid}
-%%| echo: false
 erDiagram
-    CUSTOMER ||--o{ ORDER : places
-    CUSTOMER }|..|{ DELIVERY-ADDRESS : uses
-    CUSTOMER{
-        int id
-        string first_name
-        string last_name
+    roles }|--o{ peopleroles : assigns
+    people }|--o{ peopleskills : identify
+    people }o--|{ peopleroles : "belong to"
+    skills }o--|{ peopleskills : attributes
+    
+    people {
+        int id PK
+        varchar first_name
+        varchar last_name
+        varchar email
+        varchar linkedin_url
+        varchar headshot_url
+        varchar discord_handle
+        varchar brief_bio
     }
-    DELIVERY-ADDRESS {
+    roles {
+        int id PK
+        varchar name
+        int sort_priority
+    }
+    skills {
+        int id PK
+        varchar name
+        varchar description
+        varchar tag
+        varchar URL
+        varchar time_commitment
+    }
+    peopleroles {
+        int id PK
+        int people_id FK
+        int role_id FK
+        varchar date_assigned
+    }
+    peopleskills {
         int id
+        int skills_id FK
+        int people_id FK
+        varchar date_acquired
     }
 ```
 
@@ -149,7 +178,17 @@ Below is a list of data in the *skills* table.
 ```{python}
 #| echo: false
 #| eval: true
-
+sql = f"""
+select * from skills;
+"""
+try:
+    df = pd.read_sql(sql,cnx)
+    df
+except Exception as e:
+    message = str(e)
+    print(f"An error occurred:\n\n{message}\n\nIgnoring and moving on.")
+    df = pd.DataFrame()
+df
 ## Add code to list roles table here
 ```
 
@@ -162,7 +201,17 @@ Below is a list of data in the *roles* table.
 ```{python}
 #| echo: false
 #| eval: true
-
+sql = f"""
+select * from roles;
+"""
+try:
+    df = pd.read_sql(sql,cnx)
+    df
+except Exception as e:
+    message = str(e)
+    print(f"An error occurred:\n\n{message}\n\nIgnoring and moving on.")
+    df = pd.DataFrame()
+df
 ## Add code to list roles table here
 ```
 
@@ -177,7 +226,8 @@ Let's explore the database!
 
 ```{python}
 sql = f"""
-select * from people
+select name, tag, description from skills
+order by name ASC
 """
 ```
 
@@ -201,29 +251,184 @@ df
 
 ### List people names and email addresses ordered by last_name
 
+```{python}
+#| echo: false
+#| eval: true
+sql = f"""
+select last_name, email from people
+order by last_name ASC
+"""
+try:
+    df = pd.read_sql(sql,cnx)
+    df
+except Exception as e:
+    message = str(e)
+    print(f"An error occurred:\n\n{message}\n\nIgnoring and moving on.")
+    df = pd.DataFrame()
+df
+## Add code to list roles table here
+```
 
 ### List skill names of Person 1
+
+```{python}
+#| echo: false
+#| eval: true
+sql = f"""
+select skills.name 
+from skills
+inner join peopleskills on peopleskills.skills_id=skills.id
+where peopleskills.people_id=1
+"""
+try:
+    df = pd.read_sql(sql,cnx)
+    df
+except Exception as e:
+    message = str(e)
+    print(f"An error occurred:\n\n{message}\n\nIgnoring and moving on.")
+    df = pd.DataFrame()
+df
+## Add code to list roles table here
+```
 
 
 ### List people names with Skill 6
 
+```{python}
+#| echo: false
+#| eval: true
+sql = f"""
+select people.first_name, people.last_name 
+from people
+inner join peopleskills on peopleskills.people_id=people.id
+where peopleskills.skills_id=6
+"""
+try:
+    df = pd.read_sql(sql,cnx)
+    df
+except Exception as e:
+    message = str(e)
+    print(f"An error occurred:\n\n{message}\n\nIgnoring and moving on.")
+    df = pd.DataFrame()
+df
+## Add code to list roles table here
+```
+
 
 ### List people with a DEVELOPER role
+
+```{python}
+#| echo: false
+#| eval: true
+sql = f"""
+select * from people
+inner join peopleroles on peopleroles.people_id=people.id
+where peopleroles.role_id=2
+"""
+try:
+    df = pd.read_sql(sql,cnx)
+    df
+except Exception as e:
+    message = str(e)
+    print(f"An error occurred:\n\n{message}\n\nIgnoring and moving on.")
+    df = pd.DataFrame()
+df
+## Add code to list roles table here
+```
 
 
 ### List names and email addresses of people without skills
 
+```{python}
+#| echo: false
+#| eval: true
+sql = f"""
+select people.first_name, people.last_name, people.email 
+from people
+left join peopleskills on peopleskills.people_id=people.id
+where peopleskills.id is null
+"""
+try:
+    df = pd.read_sql(sql,cnx)
+    df
+except Exception as e:
+    message = str(e)
+    print(f"An error occurred:\n\n{message}\n\nIgnoring and moving on.")
+    df = pd.DataFrame()
+df
+## Add code to list roles table here
+```
+
 
 ### List names and tags of unused skills
 
+```{python}
+#| echo: false
+#| eval: true
+sql = f"""
+select skills.name, skills.tag 
+from skills
+left join peopleskills on peopleskills.skills_id=skills.id
+where peopleskills.skills_id is null
+"""
+try:
+    df = pd.read_sql(sql,cnx)
+    df
+except Exception as e:
+    message = str(e)
+    print(f"An error occurred:\n\n{message}\n\nIgnoring and moving on.")
+    df = pd.DataFrame()
+df
+## Add code to list roles table here
+```
 
 ### List people names and skill names with the BOSS role
 
+```{python}
+#| echo: false
+#| eval: true
+sql = f"""
+select people.first_name, people.last_name, skills.name 
+from people
+join peopleroles on peopleroles.people_id=people.id
+join peopleskills on peopleskills.people_id=people.id
+join skills on peopleskills.skills_id=skills.id
+where peopleroles.role_id=5
+"""
+try:
+    df = pd.read_sql(sql,cnx)
+    df
+except Exception as e:
+    message = str(e)
+    print(f"An error occurred:\n\n{message}\n\nIgnoring and moving on.")
+    df = pd.DataFrame()
+df
+## Add code to list roles table here
+```
 
 ### List ids and names of unused roles
 
+```{python}
+#| echo: false
+#| eval: true
+sql = f"""
+select roles.id, roles.name
+from roles
+right join peopleroles on peopleroles.role_id=roles.id
+where peopleroles.people_id is null
+"""
+try:
+    df = pd.read_sql(sql,cnx)
+    df
+except Exception as e:
+    message = str(e)
+    print(f"An error occurred:\n\n{message}\n\nIgnoring and moving on.")
+    df = pd.DataFrame()
+df
+## Add code to list roles table here
+```
 
 ## Reflection
 
-(Write a paragraph expressing your thoughts, feelings, and insights about your experience with this assignment.  Pause and breath before writing - I'm trying to encourage critical thinking and self-awareness while allowing you to explore the connections between theory and practice. And yes, delete this paragraph.)
+This was actually a really fun assignment. Maybe the time crunch made it more enjoyable. But I had a really fun time working out the logic for those SQL statements. It was like a cool little puzzle. Getting things actually working went smoother than anticipated. I was intimidated at first but everything was pretty straight forward. It's great that solutions to technicical issues were easy enough to find online.
 
